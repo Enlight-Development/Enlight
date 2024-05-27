@@ -262,9 +262,6 @@ void subghz_cli_command_tx(Cli* cli, FuriString* args, void* context) {
             furi_delay_ms(333);
         }
         subghz_devices_stop_async_tx(device);
-
-    } else {
-        printf("Transmission on this frequency is restricted in your region\r\n");
     }
 
     subghz_devices_sleep(device);
@@ -593,6 +590,17 @@ static FuriHalSubGhzPreset subghz_cli_get_preset_name(const char* preset_name) {
     return preset;
 }
 
+void bypass_country_regulations() {
+    printf("Bypassing...\n");
+    while(!(subghz_devices_is_async_complete_tx(device) || cli_cmd_interrupt_received(cli))) {
+        printf(".");
+        fflush(stdout);
+        furi_delay_ms(333);
+    }
+
+    subghz_devices_stop_async_tx(device);
+}
+
 void subghz_cli_command_tx_from_file(Cli* cli, FuriString* args, void* context) { // -V524
     UNUSED(context);
     FuriString* file_name;
@@ -792,6 +800,8 @@ void subghz_cli_command_tx_from_file(Cli* cli, FuriString* args, void* context) 
         do {
             //delay in downloading files and other preparatory processes
             furi_delay_ms(200);
+
+            //erm what the sigma
             if(subghz_devices_start_async_tx(device, subghz_transmitter_yield, transmitter)) {
                 while(
                     !(subghz_devices_is_async_complete_tx(device) ||
@@ -803,7 +813,7 @@ void subghz_cli_command_tx_from_file(Cli* cli, FuriString* args, void* context) 
                 subghz_devices_stop_async_tx(device);
 
             } else {
-                printf("Transmission on this frequency is restricted in your region\r\n");
+                bypass_country_regulations();
             }
 
             if(!strcmp(furi_string_get_cstr(temp_str), "RAW")) {
